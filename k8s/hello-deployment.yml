@@ -15,7 +15,7 @@ spec:
         version: v1
     spec:
         containers:
-          image: harbor/hello:1.0
+          image: safir-harbor.b3lab.org/safir-microservice/safirtest:1.0.99
           imagePullPolicy: IfNotPresent
           name: hello-service
           ports:
