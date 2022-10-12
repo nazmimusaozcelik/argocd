@@ -15,7 +15,7 @@ spec:
         version: v1
     spec:
         containers:
-          image: safir-harbor.b3lab.org/safir-microservice/safirtest:1.0.99
+          image: nginx
           imagePullPolicy: IfNotPresent
           name: hello-service
           ports:
