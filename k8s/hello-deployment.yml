@@ -17,5 +17,4 @@ spec:
         image: safir-harbor.b3lab.org/safir-microservice/safirtest:1.0.99
         ports:
         - containerPort: 8080
-           name: http
-           protocol: TCP
+        
