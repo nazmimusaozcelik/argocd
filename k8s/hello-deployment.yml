@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hello-service
-        image:3.3.3
+        image: 3.3.3
         ports:
         - containerPort: 8080
         
