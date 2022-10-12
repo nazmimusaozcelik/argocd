@@ -3,22 +3,19 @@ kind: Deployment
 metadata:
   name: hello-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: hello-service
   template:
     metadata:
-      name: hello-service
       labels:
         app: hello-service
-        version: v1
     spec:
-        containers:
-          image: safir-harbor.b3lab.org/safir-microservice/safirtest:1.0.99
-          imagePullPolicy: IfNotPresent
-          name: hello-service
-          ports:
-            - containerPort: 8080
-              name: http
-              protocol: TCP
+      containers:
+      - name: hello-service
+        image: safir-harbor.b3lab.org/safir-microservice/safirtest:1.0.99
+        ports:
+        - containerPort: 8080
+           name: http
+           protocol: TCP
