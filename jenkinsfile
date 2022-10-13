@@ -1,0 +1,112 @@
+
+pipeline {
+    agent {label 'quarkus'}
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'master', url: 'https://github.com/nazmimusaozcelik/argocd.git'
+                
+            }
+        }
+
+         stage('GET_VARIABLES') {
+            steps {
+                
+                 script {
+                  
+                   env.IMAGE_NAME = sh(script:'grep "image.name=" /home/cicd/workspace/argocd-image-latest/src/main/resources/application.properties | awk -F"=" "{ print $2 }"', returnStdout: true).replace("image.name=","").trim()
+                   env.IMAGE_VERSION = sh(script:'grep "image.version=" /home/cicd/workspace/argocd-image-latest/src/main/resources/application.properties | awk -F"=" "{ print $2 }"', returnStdout: true).replace("image.version=","").trim()
+                   env.AV_IMAGE_NAME = sh(script:'grep "image:" /home/cicd/workspace/argocd-image-latest/k8s/hello-deployment.yml | awk -F"=" "{ print $2 }"', returnStdout: true).replace("image:","").trim()          
+                   env.IMAGE = "${env.IMAGE_NAME}:${env.IMAGE_VERSION}" 
+                   env.LATEST_IMAGE = "safir-harbor.b3lab.org/safir-microservice/${env.IMAGE}"
+  
+                 }
+                
+               
+            }            
+        }
+        
+        stage("Check Variable Values"){
+            steps{
+                
+                echo "IMAGE_NAME ---> ${env.IMAGE_NAME}"
+                echo "IMAGE_VERSION ----> ${env.IMAGE_VERSION}"
+                echo "AV_IMAGE_NAME ----> ${env.AV_IMAGE_NAME}"
+                echo "IMAGE ----> ${env.IMAGE}"
+                echo "LATEST_IMAGE ----> ${env.LATEST_IMAGE}"
+            }
+            
+        }
+
+        stage('Native Build') {
+            steps {
+                sh 'ls -lash'
+                sh './mvnw package -Pnative'
+            }
+        }
+
+        stage('Dockerfile.native content') {
+            steps {
+                sh 'pwd'
+                sh 'cat src/main/docker/Dockerfile.native'
+              
+            }
+        }
+      
+        stage('Image Build') {
+            steps {
+                sh 'pwd'
+                
+                sh 'echo $IMAGE_NAME'
+                
+                sh 'echo $IMAGE_VERSION'
+                
+                sh "docker build -f src/main/docker/Dockerfile.native -t ${env.IMAGE} ."
+            }
+        }
+        
+        stage('Image List') {
+            steps {
+                sh 'docker images'
+            }
+        }
+
+        stage('AddingNewTag') {
+            steps {
+                sh "docker tag ${env.IMAGE} safir-harbor.b3lab.org/safir-microservice/${env.IMAGE} "
+            }
+        }
+
+        stage('Image Push Harbor Registry') {
+            steps {
+                sh "docker push safir-harbor.b3lab.org/safir-microservice/${env.IMAGE} "
+                sh "docker image rm ${env.IMAGE}"
+                sh "docker image rm safir-harbor.b3lab.org/safir-microservice/${env.IMAGE}"
+                sh 'docker images'
+            }
+        }
+
+
+        stage("Editing Yaml File"){
+            steps{
+                dir('/home/cicd/workspace/argocd-image-latest/k8s'){
+                sh "sed -i 's+${env.AV_IMAGE_NAME}+${env.LATEST_IMAGE}+g' hello-deployment.yml"
+                sh 'cat hello-deployment.yml'
+            
+                }
+            }
+        }
+
+        stage("Update Yaml File Push To Repo"){
+            steps{
+                dir('/home/cicd/workspace/argocd-image-latest'){
+                sh 'git status'
+                sh "git add ."
+                sh "git commit -m 'image name changed'"
+                sh "git push https://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@github.com/nazmimusaozcelik/argocd.git"
+                }
+            }
+        }
+        
+    }
+}
